@@ -1,11 +1,12 @@
-import tkinter as tk
-from tkinter import messagebox
-import pyotp
 import json
 import os
 import sys
 import time
+import tkinter as tk
+from tkinter import messagebox
+
 import keyboard
+import pyotp
 
 
 def load_config():
@@ -14,18 +15,20 @@ def load_config():
     Beendet das Programm mit einer Fehlermeldung, falls die Datei nicht gefunden wird
     oder ungültig ist.
     """
-    config_path = 'config.json'
+    config_path = "config.json"
     if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Die Konfigurationsdatei '{config_path}' wurde nicht gefunden.")
+        raise FileNotFoundError(
+            f"Die Konfigurationsdatei '{config_path}' wurde nicht gefunden."
+        )
 
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
     except json.JSONDecodeError as e:
         raise ValueError(f"Fehler beim Lesen der Konfigurationsdatei: {e}")
 
     # Überprüfen, ob alle erforderlichen Schlüssel vorhanden sind
-    required_keys = ['SECRET', 'HOTKEY', 'HINT_TEXT']
+    required_keys = ["SECRET", "HOTKEY", "HINT_TEXT"]
     for key in required_keys:
         if key not in config:
             raise KeyError(f"Der Schlüssel '{key}' fehlt in der Konfigurationsdatei.")
@@ -33,17 +36,25 @@ def load_config():
     return config
 
 
+def show_error_and_exit(message: str) -> None:
+    """Zeigt eine Fehlermeldung an und beendet das Programm."""
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror("Fehler", message)
+    root.destroy()
+    sys.exit(1)
+
+
 class QuickTOTPApp:
     def __init__(self, root, config):
         self.root = root
         self.config = config
 
-        self.secret = config['SECRET']
-        self.hotkey = config['HOTKEY']
-        self.hint_text = config['HINT_TEXT'].replace('{HOTKEY}', self.hotkey)
+        self.secret = config["SECRET"]
+        self.hotkey = config["HOTKEY"]
+        self.hint_text = config["HINT_TEXT"].replace("{HOTKEY}", self.hotkey)
 
         self.totp = pyotp.TOTP(self.secret)
-        self.time_interval = self.totp.interval  # Standardmäßig 30 Sekunden
 
         self.create_widgets()
         self.update_totp()
@@ -53,7 +64,9 @@ class QuickTOTPApp:
             keyboard.add_hotkey(self.hotkey, self.insert_totp_code)
         except Exception as e:
             messagebox.showerror(
-                "Fehler", f"Der Hotkey '{self.hotkey}' konnte nicht registriert werden.\n{e}")
+                "Fehler",
+                f"Der Hotkey '{self.hotkey}' konnte nicht registriert werden.\n{e}",
+            )
 
     def create_widgets(self):
         """Erstellt die GUI-Elemente."""
@@ -70,8 +83,14 @@ class QuickTOTPApp:
         self.countdown_label = tk.Label(self.frame, text="", font=("Helvetica", 14))
         self.countdown_label.pack()
 
-        self.hint_label = tk.Label(self.frame, text=self.hint_text, font=("Helvetica", 10),
-                                   wraplength=280, justify="center", pady=10)
+        self.hint_label = tk.Label(
+            self.frame,
+            text=self.hint_text,
+            font=("Helvetica", 10),
+            wraplength=280,
+            justify="center",
+            pady=10,
+        )
         self.hint_label.pack()
 
     def update_totp(self):
@@ -110,10 +129,7 @@ def main():
         config = load_config()
     except Exception as e:
         # Zeige eine Fehlermeldung an und beende das Programm
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("Fehler", str(e))
-        sys.exit(1)
+        show_error_and_exit(str(e))
 
     root = tk.Tk()
     app = QuickTOTPApp(root, config)
